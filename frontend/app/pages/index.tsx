@@ -1,5 +1,5 @@
 "use client"
-import { useState, ChangeEvent, KeyboardEvent } from "react";
+import { useState, ChangeEvent, KeyboardEvent, useEffect } from "react";
 
 interface Message {
   role: "user" | "bot";
@@ -11,19 +11,59 @@ export default function HomePage() {
     { role: "bot", text: "Hello! Upload a file and ask me anything." }
   ]);
   const [input, setInput] = useState<string>("");
+  const [botResponse, setBotResponse] = useState<string>("");
+const sendData = async (query: any) => {
+  const newmessage: Message = { role: "user", text: query };
+  const response = await fetch("http://localhost:5000/llm", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(newmessage),
+  });
+  // console.log("response");
+  const result = await response.json();
+  setMessages([...messages, newmessage]);
+  setBotResponse(result);
+  return result;
+  // console.log(result);
+};
+// useEffect(() => {
+//   const fetchMessages = async () => {
+//     const res = await fetch("http://localhost:5000/llm");
+//     const data = await res.json();
+//     console.log(data);
+//     setMessages(data);
+//   };
 
-  const sendMessage = () => {
+//   fetchMessages();
+// }, []);
+  const sendMessage = async () => {
     if (input.trim() === "") return;
     setMessages([...messages, { role: "user", text: input }]);
+    let data:any=await sendData(input);
     setInput("");
+    console.log("data",data);
 
-    // Simulate bot response
-    setTimeout(() => {
+    await new Promise((resolve) => {
+      let interval=    setInterval( () => {
+      if(data)
+      {
       setMessages(prev => [
         ...prev,
-        { role: "bot", text: "Processing your query..." }
+        { role: "bot", text: data.text }
+
       ]);
+      resolve(true);
+      clearInterval(interval);
+    }
+    // setInput("");
+
     }, 1000);
+    
+    });
+    // Simulate bot response
+
   };
 
   const handleKeyPress = (e: KeyboardEvent<HTMLInputElement>) => {
