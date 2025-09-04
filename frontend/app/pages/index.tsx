@@ -14,17 +14,17 @@ export default function HomePage() {
   const [botResponse, setBotResponse] = useState<string>("");
 const sendData = async (query: any) => {
   const newmessage: Message = { role: "user", text: query };
-  const response = await fetch("http://localhost:5000/llm", {
+  const response = await fetch("http://localhost:5000/query", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(newmessage),
+    body: JSON.stringify({user_input: query}),
   });
   // console.log("response");
   const result = await response.json();
   setMessages([...messages, newmessage]);
-  setBotResponse(result);
+  setBotResponse(result.response);
   return result;
   // console.log(result);
 };
@@ -51,7 +51,7 @@ const sendData = async (query: any) => {
       {
       setMessages(prev => [
         ...prev,
-        { role: "bot", text: data.text }
+        { role: "bot", text: data.response }
 
       ]);
       resolve(true);
