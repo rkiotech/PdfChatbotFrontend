@@ -29,8 +29,7 @@ pipeline{
         stage('Deploy'){
             steps {
                 echo 'Deploying....'
-                bat 'npx vercel --prod --yes
-                 --token $VERCEL_TOKEN'
+                bat 'npx vercel --prod --yes --token $VERCEL_TOKEN'
             }
         }
     }
