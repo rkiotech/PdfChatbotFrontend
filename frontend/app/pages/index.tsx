@@ -83,7 +83,7 @@ const sendData = async (query: any) => {
     <div className="h-screen flex bg-gray-100">
       {/* Sidebar */}
       <div className="w-1/4 bg-white shadow-lg p-6 flex flex-col">
-        <h2 className="text-xl font-bold mb-6">📂 Upload Files</h2>
+        <h2 className="text-xl font-bold mb-6">📂 Upload Filesbuddy</h2>
         <input
           type="file"
           className="border border-gray-300 rounded-lg p-2"
