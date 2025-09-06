@@ -7,13 +7,13 @@ pipeline{
         stage('Install Dependencies'){
             steps{
                 echo 'Installing dependencies..'
-                sh 'npm install'
+                bat 'npm install'
             }
         }
          stage('Build Project'){
             steps{
                 echo 'Building project..'
-                sh 'npm run build'
+                bat 'npm run build'
             }
         }
         stage('Build'){
@@ -29,7 +29,7 @@ pipeline{
         stage('Deploy'){
             steps {
                 echo 'Deploying....'
-                sh 'npx vercel --prod --yes --token %VERCEL_TOKEN%'
+                bat 'npx vercel --prod --yes --token %VERCEL_TOKEN%'
             }
         }
     }
