@@ -129,7 +129,7 @@ const sendData = async (query: any) => {
             className="ml-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
             onClick={sendMessage}
           >
-            Send
+            Send Message
           </button>
         </div>
       </div>
