@@ -1,30 +1,89 @@
 "use client"
-import { useState, ChangeEvent, KeyboardEvent, useEffect } from "react";
+import { useState, ChangeEvent, KeyboardEvent, useEffect, useRef, use} from "react";
 
 interface Message {
-  role: "user" | "bot";
-  text: string;
+  type: "human" | "ai";
+  content: string;
 }
 
 export default function HomePage() {
   const [messages, setMessages] = useState<Message[]>([
-    { role: "bot", text: "Hello! Upload a file and ask me anything." }
-  ]);
+    { type: "ai", content: "Hello! Upload a file and ask me anything." }
+  ])
+  let chatEndRef=useRef<HTMLDivElement>(null);
   const [input, setInput] = useState<string>("");
+
   const [botResponse, setBotResponse] = useState<string>("");
-const sendData = async (query: any) => {
-  const newmessage: Message = { role: "user", text: query };
-  const response = await fetch("http://localhost:5000/query", {
+const fetchLastMessage=async()=>{
+      const response = await fetch("http://localhost:8000/load_conversation/1", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({user_input: query}),
+    body: JSON.stringify({id:"1"}),
   });
   // console.log("response");
   const result = await response.json();
-  setMessages([...messages, newmessage]);
-  setBotResponse(result.response);
+  setMessages(result);
+  console.log("Messages loaded", result);
+}
+useEffect(() => {
+  chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  fetchLastMessage();
+
+}, []);
+  const [showPrompt, setShowPrompt] = useState(false);
+  const [aprrove, setAprrove] = useState(0);
+  const [loading, setLoading] = useState(false)
+ const triggerPrompt = () => {
+    setShowPrompt(true);
+  };
+
+  // ✅ Function for API calls
+  const handleResponse = async (isApproved:boolean) => {
+    setLoading(true);
+    setShowPrompt(false);
+    if (isApproved) {
+      setAprrove(aprrove + 1);
+    }
+    else
+    {
+      setAprrove(aprrove - 1);
+    }
+    try {
+      const url = isApproved ? "http://localhost:8000/approved/1" : "http://localhost:8000/decline/1"; // Change to your real endpoints
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({id:"1"}),
+      });
+
+      const data = await res.json();
+      setMessages([...messages, data.messages]);
+      console.log("API Response:", data);
+      alert(isApproved ? "✅ Approved!" : "❌ Rejected!");
+    } catch (err) {
+      console.error(err);
+      alert("Something went wrong!");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+const sendData = async (query: any) => {
+  // const newmessage: Message = { role: "user", text: query };
+  const response = await fetch("http://localhost:8000/invoke/1", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({user_input: query,id:"1"}),
+  });
+  // console.log("response");
+  const result = await response.json();
+  // console.log("response",result.messages);
+  
+  // setBotResponse(result.response);
   return result;
   // console.log(result);
 };
@@ -40,21 +99,53 @@ const sendData = async (query: any) => {
 // }, []);
   const sendMessage = async () => {
     if (input.trim() === "") return;
-    setMessages([...messages, { role: "user", text: input }]);
-    let data:any=await sendData(input);
+    let userInput=input
     setInput("");
-    console.log("data",data);
+    setMessages([...messages, { type: "human", content: userInput }]);
+    let data:any=await sendData(userInput);
+    if (data?.status==="approval_required")
+    {
+       setShowPrompt(true);
+    // await new Promise((resolve) => {
+    //   let interval=    setInterval( () => {
+
+        
+
+    //   if (aprrove !==0 && showPrompt===false)
+
+    //   {resolve(true);
+    //     setAprrove(0)
+    //   }
+    //   clearInterval(interval);
+    
+    // // setInput("");
+
+    // }, 1000);
+    
+    // });
+    // Si
+
+  }
+
+    // setMessages([...messages,data.messages]);
+    
+    // console.log("data",data.messages);
 
     await new Promise((resolve) => {
       let interval=    setInterval( () => {
       if(data)
       {
-      setMessages(prev => [
-        ...prev,
-        { role: "bot", text: data.response }
+        
+      // setMessages(prev => [
+      //   ...prev,
+      //   data.messages
 
-      ]);
-      resolve(true);
+      // ]);
+      if (aprrove !==0 && showPrompt===false)
+
+      {resolve(true);
+        setAprrove(0)
+      }
       clearInterval(interval);
     }
     // setInput("");
@@ -100,20 +191,22 @@ const sendData = async (query: any) => {
         <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50">
           {messages.map((msg, index) => (
             <div
+            
               key={index}
               className={`flex ${
-                msg.role === "user" ? "justify-end" : "justify-start"
+                msg.type === "human" ? "justify-end" : "justify-start"
               }`}
             >
               <div
                 className={`px-4 py-2 rounded-lg max-w-xs text-white ${
-                  msg.role === "user" ? "bg-blue-500" : "bg-green-500"
+                  msg.type === "human" ? "bg-blue-500" : "bg-green-500"
                 }`}
               >
-                {msg.text}
+                {msg.content}
               </div>
             </div>
           ))}
+          <div ref={chatEndRef} />
         </div>
 
         <div className="p-4 bg-white flex">
@@ -133,6 +226,35 @@ const sendData = async (query: any) => {
           </button>
         </div>
       </div>
+            {/* ✅ Approval Prompt Modal */}
+            
+      {showPrompt && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-8 rounded-2xl shadow-xl text-center">
+            <h2 className="text-xl font-semibold mb-6">
+              Do you approve this action?
+            </h2>
+            <div className="flex justify-center space-x-6">
+              <button
+                onClick={() => handleResponse(true)}
+                className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700"
+                disabled={loading}
+              >
+                Yes
+              </button>
+              <button
+                onClick={() => handleResponse(false)}
+                className="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700"
+                disabled={loading}
+              >
+                No
+              </button>
+            </div>
+          </div>
+          </div>
+        )
+      }
     </div>
+    
   );
 }
